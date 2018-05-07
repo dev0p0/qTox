@@ -1,5 +1,5 @@
 /*
-    Copyright © 2014-2015 by The qTox Project Contributors
+    Copyright © 2014-2018 by The qTox Project Contributors
 
     This file is part of qTox, a Qt-based graphical interface for Tox.
 
@@ -314,6 +314,9 @@ void ProfileForm::onAvatarClicked()
     const QString path = QFileDialog::getOpenFileName(Q_NULLPTR, tr("Choose a profile picture"),
                                                 QDir::homePath(), filter, nullptr);
 
+    if (path.isEmpty()) {
+        return;
+    }
     const IProfileInfo::SetAvatarResult result = profileInfo->setAvatar(path);
     if (result == IProfileInfo::SetAvatarResult::OK) {
         return;

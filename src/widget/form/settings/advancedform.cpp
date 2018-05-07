@@ -1,5 +1,5 @@
 /*
-    Copyright © 2014-2016 by The qTox Project Contributors
+    Copyright © 2014-2018 by The qTox Project Contributors
 
     This file is part of qTox, a Qt-based graphical interface for Tox.
 
@@ -55,7 +55,10 @@ AdvancedForm::AdvancedForm()
     Settings& s = Settings::getInstance();
     bodyUI->cbEnableIPv6->setChecked(s.getEnableIPv6());
     bodyUI->cbMakeToxPortable->setChecked(Settings::getInstance().getMakeToxPortable());
-    bodyUI->cbEnableUDP->setChecked(!s.getForceTCP());
+    const bool udpEnabled = !s.getForceTCP();
+    bodyUI->cbEnableUDP->setChecked(udpEnabled);
+    bodyUI->cbEnableLanDiscovery->setChecked(s.getEnableLanDiscovery());
+    bodyUI->cbEnableLanDiscovery->setEnabled(udpEnabled);
     bodyUI->proxyAddr->setText(s.getProxyAddr());
     quint16 port = s.getProxyPort();
     if (port > 0)
@@ -172,7 +175,14 @@ void AdvancedForm::on_cbEnableIPv6_stateChanged()
 
 void AdvancedForm::on_cbEnableUDP_stateChanged()
 {
-    Settings::getInstance().setForceTCP(!bodyUI->cbEnableUDP->isChecked());
+    const bool enableUdp = bodyUI->cbEnableUDP->isChecked();
+    Settings::getInstance().setForceTCP(!enableUdp);
+    bodyUI->cbEnableLanDiscovery->setEnabled(enableUdp);
+}
+
+void AdvancedForm::on_cbEnableLanDiscovery_stateChanged()
+{
+    Settings::getInstance().setEnableLanDiscovery(bodyUI->cbEnableLanDiscovery->isChecked());
 }
 
 void AdvancedForm::on_proxyAddr_editingFinished()

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2014-2015 by The qTox Project Contributors
+    Copyright © 2014-2018 by The qTox Project Contributors
 
     This file is part of qTox, a Qt-based graphical interface for Tox.
 
@@ -73,7 +73,8 @@ QString editName(const QString& name)
  */
 
 GroupChatForm::GroupChatForm(Group* chatGroup)
-    : group(chatGroup)
+    : GenericChatForm (chatGroup)
+    , group(chatGroup)
     , inCall(false)
 {
     nusersLabel = new QLabel();
@@ -114,9 +115,7 @@ GroupChatForm::GroupChatForm(Group* chatGroup)
     connect(headWidget, &ChatFormHeader::callTriggered, this, &GroupChatForm::onCallClicked);
     connect(headWidget, &ChatFormHeader::micMuteToggle, this, &GroupChatForm::onMicMuteToggle);
     connect(headWidget, &ChatFormHeader::volMuteToggle, this, &GroupChatForm::onVolMuteToggle);
-    connect(headWidget, &ChatFormHeader::nameChanged, this, [=](const QString& newName) {
-        chatGroup->setName(newName);
-    });
+    connect(headWidget, &ChatFormHeader::nameChanged, chatGroup, &Group::setName);
     connect(group, &Group::userListChanged, this, &GroupChatForm::onUserListChanged);
     connect(group, &Group::titleChanged, this, &GroupChatForm::onTitleChanged);
     connect(&Settings::getInstance(), &Settings::blackListChanged, this, &GroupChatForm::updateUserNames);
@@ -182,7 +181,6 @@ void GroupChatForm::onUserListChanged()
 void GroupChatForm::onTitleChanged(uint32_t groupId, const QString& author, const QString& title)
 {
     Q_UNUSED(groupId);
-    setName(title);
     if (author.isEmpty()) {
         return;
     }
@@ -226,6 +224,11 @@ void GroupChatForm::updateUserNames()
 
     peerLabels.clear();
     const int peersCount = group->getPeersCount();
+
+    // no need to do anything without a peer
+    if (peersCount == 0) {
+        return;
+    }
     peerLabels.reserve(peersCount);
     QVector<QLabel*> nickLabelList(peersCount);
 
@@ -247,9 +250,9 @@ void GroupChatForm::updateUserNames()
 
         if (group->isSelfPeerNumber(peerNumber)) {
             label->setStyleSheet(QStringLiteral("QLabel {color : green;}"));
-	} else if (s.getBlackList().contains(peerPk.toString())) {
+        } else if (s.getBlackList().contains(peerPk.toString())) {
             label->setStyleSheet(QStringLiteral("QLabel {color : darkRed;}"));
-	} else if (netcam != nullptr) {
+        } else if (netcam != nullptr) {
             static_cast<GroupNetCamView*>(netcam)->addPeer(peerNumber, fullName);
         }
         peerLabels.append(label);
@@ -264,6 +267,7 @@ void GroupChatForm::updateUserNames()
     {
         return a->text().toLower() < b->text().toLower();
     });
+
     // remove comma from last sorted label
     QLabel* const lastLabel = nickLabelList.last();
     QString labelText = lastLabel->text();

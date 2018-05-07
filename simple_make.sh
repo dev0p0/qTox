@@ -2,6 +2,10 @@
 
 set -eu -o pipefail
 
+# additional flags for apt-get, used for CI
+readonly APT_FLAGS=$1
+readonly WITHOUT_SQLCIPHER=$2
+
 apt_install() {
     local apt_packages=(
         automake
@@ -21,7 +25,6 @@ apt_install() {
         libqt5opengl5-dev
         libqt5svg5-dev
         libsodium-dev
-        libsqlcipher-dev
         libtool
         libvpx-dev
         libxss-dev
@@ -31,7 +34,11 @@ apt_install() {
         qttools5-dev-tools
     )
 
-    sudo apt-get install "${apt_packages[@]}"
+    if [ "$WITHOUT_SQLCIPHER" != "True" ]; then
+        apt_packages+=libsqlcipher-dev
+    fi
+
+    sudo apt-get install $APT_FLAGS "${apt_packages[@]}"
 }
 
 pacman_install() {

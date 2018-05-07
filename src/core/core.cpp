@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2013 by Maxim Biro <nurupo.contributions@gmail.com>
-    Copyright © 2014-2017 by The qTox Project Contributors
+    Copyright © 2014-2018 by The qTox Project Contributors
 
     This file is part of qTox, a Qt-based graphical interface for Tox.
 
@@ -132,22 +132,28 @@ ToxOptionsPtr initToxOptions(const QByteArray& savedata, const ICoreSettings* s)
 {
     // IPv6 needed for LAN discovery, but can crash some weird routers. On by default, can be
     // disabled in options.
-    bool enableIPv6 = s->getEnableIPv6();
-    bool forceTCP = s->getForceTCP();
+    const bool enableIPv6 = s->getEnableIPv6();
+    const bool forceTCP = s->getForceTCP();
+    // LAN requiring UDP is a toxcore limitation, ideally wouldn't be related
+    const bool enableLanDiscovery = s->getEnableLanDiscovery() && !forceTCP;
     ICoreSettings::ProxyType proxyType = s->getProxyType();
     quint16 proxyPort = s->getProxyPort();
     QString proxyAddr = s->getProxyAddr();
     QByteArray proxyAddrData = proxyAddr.toUtf8();
 
+    if (!enableLanDiscovery) {
+        qWarning() << "Core starting without LAN discovery. Peers can only be found through DHT.";
+    }
     if (enableIPv6) {
         qDebug() << "Core starting with IPv6 enabled";
-    } else {
+    } else if(enableLanDiscovery) {
         qWarning() << "Core starting with IPv6 disabled. LAN discovery may not work properly.";
     }
 
     ToxOptionsPtr toxOptions = ToxOptionsPtr(tox_options_new(NULL));
     tox_options_set_ipv6_enabled(toxOptions.get(), enableIPv6);
     tox_options_set_udp_enabled(toxOptions.get(), !forceTCP);
+    tox_options_set_local_discovery_enabled(toxOptions.get(), enableLanDiscovery);
     tox_options_set_start_port(toxOptions.get(), 0);
     tox_options_set_end_port(toxOptions.get(), 0);
 
@@ -1386,15 +1392,17 @@ QStringList Core::splitMessage(const QString& message, int maxLen)
         }
 
         if (splitPos <= 0) {
+            constexpr uint8_t firstOfMultiByteMask = 0xC0;
+            constexpr uint8_t multiByteMask = 0x80;
             splitPos = maxLen;
-            if (ba_message[splitPos] & 0x80) {
-                do {
+            // don't split a utf8 character
+            if ((ba_message[splitPos] & multiByteMask) == multiByteMask) {
+                while ((ba_message[splitPos] & firstOfMultiByteMask) != firstOfMultiByteMask) {
                     --splitPos;
-                } while (!(ba_message[splitPos] & 0x40));
+                }
             }
             --splitPos;
         }
-
         splittedMsgs.append(QString{ba_message.left(splitPos + 1)});
         ba_message = ba_message.mid(splitPos + 1);
     }

@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2013 by Maxim Biro <nurupo.contributions@gmail.com>
-    Copyright © 2014-2015 by The qTox Project Contributors
+    Copyright © 2014-2018 by The qTox Project Contributors
 
     This file is part of qTox, a Qt-based graphical interface for Tox.
 
@@ -56,12 +56,12 @@ public:
     bool isCallActive(const Group* g) const;
     bool isCallVideoEnabled(const Friend* f) const;
     bool sendCallAudio(uint32_t friendNum, const int16_t* pcm, size_t samples, uint8_t chans,
-                       uint32_t rate);
+                       uint32_t rate) const;
     void sendCallVideo(uint32_t friendNum, std::shared_ptr<VideoFrame> frame);
     bool sendGroupCallAudio(int groupNum, const int16_t* pcm, size_t samples, uint8_t chans,
-                            uint32_t rate);
+                            uint32_t rate) const;
 
-    VideoSource* getVideoSourceFromCall(int callNumber);
+    VideoSource* getVideoSourceFromCall(int callNumber) const;
     void invalidateCallSources();
     void sendNoVideo();
 
